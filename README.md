@@ -20,7 +20,7 @@ to [Heroku](https://heroku.com), or any other cloud provider you'd like.
 
 ## Running Your Battlesnake on [Repl.it](https://repl.it)
 
-[![Run on Repl.it](https://repl.it/badge/github/kgorgi/starter-snake-node-ts)](https://repl.it/github/kgorgi/starter-snake-node-ts)
+[![Run on Repl.it](https://repl.it/badge/github/bgaechter/battlesnake-starter-cpp)](https://repl.it/github/bgaechter/battlesnake-starter-cpp)
 
 1. Login to your [Repl.it](https://repl.it) account.
 

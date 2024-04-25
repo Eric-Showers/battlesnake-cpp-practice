@@ -49,6 +49,20 @@ This means your Battlesnake is running correctly on Repl.it.
 
 **At this point your Battlesnake is live and ready to enter games!**
 
+## Play a Game Locally
+
+Install the [Battlesnake CLI](https://github.com/BattlesnakeOfficial/rules/tree/main/cli)
+
+* You can [download compiled binaries here](https://github.com/BattlesnakeOfficial/rules/releases)
+* or [install as a go package](https://github.com/BattlesnakeOfficial/rules/tree/main/cli#installation) (requires Go
+  1.18 or higher)
+
+Command to run a local game
+
+```sh
+battlesnake play -W 11 -H 11 --name 'Go Starter Project' --url http://localhost:8000 -g solo --browser
+```
+
 ## Registering Your Battlesnake and Creating Your First Game
 
 1. Sign in to [play.battlesnake.com](https://play.battlesnake.com/login/).

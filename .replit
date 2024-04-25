@@ -47,7 +47,7 @@ externalConsole = false
 logging = {}
 miDebuggerPath = "gdb"
 name = "g++ - Build and debug active file"
-program = "/tmp/build/main"
+program = "/tmp/build/battlesnake_starter_cpp"
 request = "launch"
 setupCommands = [
 	{ description = "Enable pretty-printing for gdb", ignoreFailures = true, text = "-enable-pretty-printing" }

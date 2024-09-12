@@ -17,7 +17,7 @@ int main() {
     });
 
     server.set_logger([](const auto &req, const auto &res) {
-        std::cout << req.method << "  - " << req.path << " " << res.status << std::endl;
+        std::cout << req.method << " - " << req.path << ": " << res.body << std::endl;
     });
 
     server.set_exception_handler([](const auto &req [[maybe_unused]], auto &res, std::exception_ptr ep) {

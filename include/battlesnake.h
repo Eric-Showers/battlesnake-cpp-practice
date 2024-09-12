@@ -39,7 +39,7 @@ namespace battlesnake {
         std::vector<Coord> body;
         Coord head;
         int length;
-        std::string latency;
+        int latency;
         std::string shout;
         Customizations customizations;
     };
@@ -63,7 +63,6 @@ namespace battlesnake {
     private:
         int foodspawnChance;
         int minimumFood;
-        int hazardDamagePerTurn;
     };
 
     class Ruleset {

@@ -66,9 +66,7 @@ namespace battlesnake {
     }
 
     RulesetSettings::RulesetSettings(json rulesetSettings): foodspawnChance(rulesetSettings["foodSpawnChance"]),
-                                                            minimumFood(rulesetSettings["minimumFood"]),
-                                                            hazardDamagePerTurn(
-                                                                rulesetSettings["hazardDamagePerTurn"]) {
+                                                            minimumFood(rulesetSettings["minimumFood"]) {
     }
 
     Ruleset::Ruleset(json ruleset): settings(ruleset["settings"]) {

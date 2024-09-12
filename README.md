@@ -12,6 +12,10 @@ to [Heroku](https://heroku.com), or any other cloud provider you'd like.
 - [httplib](https://github.com/yhirose/cpp-httplib)
 - [CMake](https://cmake.org)
 
+## Battlesnake API compatibility
+
+The project https://github.com/wrenger/battlesnake-downloader extract frame from game at a slightly different format than the [standard API](https://docs.battlesnake.com/api/example-move). This implementation support both formats
+
 ## Prerequisites
 
 - [Battlesnake Account](https://play.battlesnake.com)

@@ -60,13 +60,29 @@ namespace battlesnake {
         for (const auto &snakeBody: snake["body"]) {
             body.emplace_back(snakeBody);
         }
-        latency = snake["latency"];
         length = snake["length"];
         shout = snake["shout"];
+
+        // The implementation varies, sometime it is an int sometimes a string
+        if(snake["latency"].is_string()) {
+            try {
+                latency = std::stoi(snake["latency"].get<std::string>());
+            } catch (...) {
+                // Not a valid number
+                latency = 0;
+            }
+        } else if(snake["latency"].is_number()) {
+            latency = snake["latency"];
+        }
     }
 
     RulesetSettings::RulesetSettings(json rulesetSettings): foodspawnChance(rulesetSettings["foodSpawnChance"]),
                                                             minimumFood(rulesetSettings["minimumFood"]) {
+        if(rulesetSettings.contains("hazardDamagePerTurn")) {
+            hazardDamagePerTurn = rulesetSettings["hazardDamagePerTurn"];
+        } else {
+            hazardDamagePerTurn = 0;
+        }
     }
 
     Ruleset::Ruleset(json ruleset): settings(ruleset["settings"]) {

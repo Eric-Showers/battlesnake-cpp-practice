@@ -63,6 +63,7 @@ namespace battlesnake {
     private:
         int foodspawnChance;
         int minimumFood;
+        int hazardDamagePerTurn;
     };
 
     class Ruleset {

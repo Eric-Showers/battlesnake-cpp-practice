@@ -197,6 +197,12 @@ make
 ./battlesnake_starter_cpp
 ```
 
+For production performance use the following option for cmake:
+
+```shell
+cmake .. -DCMAKE_BUILD_TYPE=Release
+```
+
 **Note:** You cannot create games on [play.battlesnake.com](https://play.battlesnake.com) using a locally running
 Battlesnake unless you install and use a port forwarding tool like [ngrok](https://ngrok.com/).
 

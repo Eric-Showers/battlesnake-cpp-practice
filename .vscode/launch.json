@@ -1,0 +1,47 @@
+{
+    "configurations": [
+        {
+            "name": "Debug Snake",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/megabrain",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}/build",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "lldb",
+            "sourceFileMap": {
+                "proc/self/cwd": "${workspaceFolder}/src",
+                "/build": "${workspaceFolder}/src",
+                ".": "${workspaceFolder}"
+            },/*
+            "logging": {
+                "trace": true,
+                "traceResponse": true,
+                "engineLogging": true,
+                "exceptions": true,
+                "moduleLoad": true,
+                "programOutput": true
+            },*/
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Log symbol loading",
+                    "text": "log enable lldb symbols",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Load symbols manually if necessary",
+                    "text": "settings set target.auto-load-symbols true",
+                    "ignoreFailures": true
+                }
+            ]
+        }
+    ],
+    "version": "2.0.0"
+}

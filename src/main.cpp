@@ -2,6 +2,7 @@
 #include "httplib.h"
 #include "json.h"
 #include <iostream>
+#include <sstream>
 
 using json = nlohmann::json;
 
@@ -11,11 +12,31 @@ int main() {
 
     std::string const SERVER_ID = "bgaechter/battlesnake-starter-cpp";
 
-    server.set_post_routing_handler([&SERVER_ID](const auto &req, auto &res) {
+    server.set_post_routing_handler([&SERVER_ID](const auto &req [[maybe_unused]], auto &res) {
         res.set_header("Server", SERVER_ID);
     });
 
-    server.Get("/", [&bs](const httplib::Request &req, httplib::Response &res) {
+    server.set_logger([](const auto &req, const auto &res) {
+        std::cout << req.method << " - " << req.path << ": " << res.body << std::endl;
+    });
+
+    server.set_exception_handler([](const auto &req [[maybe_unused]], auto &res, std::exception_ptr ep) {
+        std::ostringstream oss;
+        try {
+            std::rethrow_exception(ep);
+        } catch (const std::exception &e) {
+            oss << R"({ "move":"up", "error":")" << e.what() << "\" }";
+        } catch (...) {
+            oss << R"({ "move":"up", "error":"Unknown Exception" })";
+        }
+        std::string result = oss.str();
+        std::cout << "[ERROR] " << result << std::endl;
+
+        res.set_content(result, "application/json");
+        res.status = httplib::StatusCode::OK_200; // Not returning 500 to keep snake alive
+      });
+
+    server.Get("/", [&bs](const httplib::Request &req [[maybe_unused]], httplib::Response &res) {
         res.set_content(bs.GetInfo(), "application/json");
     });
 
@@ -30,7 +51,7 @@ int main() {
         res.set_content(response, "application/json");
     });
 
-    server.Post("/end", [&bs](const httplib::Request &req, httplib::Response &res) {
+    server.Post("/end", [&bs](const httplib::Request &req [[maybe_unused]], httplib::Response &res) {
         res.set_content(bs.End(), "text/plain");
     });
   std::cout << "Server listening at http://127.0.0.1:8080" << std::endl;

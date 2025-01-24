@@ -9,11 +9,15 @@
 using json = nlohmann::json;
 
 namespace battlesnake {
+    class Board;
     class Coord {
     public:
         explicit Coord(json coord);
+        explicit Coord(int x, int y);
+        bool operator==(const Coord& other) const {
+            return x == other.x && y == other.y;
+        }
 
-    private:
         int x;
         int y;
     };
@@ -31,9 +35,12 @@ namespace battlesnake {
     class Snake {
     public:
         explicit Snake(json snake);
+        std::vector<Coord> getNextTurnBody();
+        std::string getDirectionStr(Coord destination) const;
+        std::string getMove(Board board) const;
+        std::string id;
 
     private:
-        std::string id;
         std::string name;
         int health;
         std::vector<Coord> body;
@@ -42,11 +49,15 @@ namespace battlesnake {
         int latency;
         std::string shout;
         Customizations customizations;
+        bool expanding;
     };
 
     class Board {
     public:
         explicit Board(json board);
+        Snake getSnake(std::string snake_id);
+        std::vector<Coord> getNeighbors(Coord pos);
+        std::vector<std::vector<bool>> getObstacles();
 
     private:
         int height;
@@ -79,9 +90,9 @@ namespace battlesnake {
     class Game {
     public:
         explicit Game(json game);
+        std::string id;
 
     private:
-        std::string id;
         Ruleset ruleset;
         std::string map;
         std::string source;
@@ -91,6 +102,7 @@ namespace battlesnake {
     class GameState {
     public:
         explicit GameState(json state);
+        std::string getMyMove() const;
 
     private:
         Game game;

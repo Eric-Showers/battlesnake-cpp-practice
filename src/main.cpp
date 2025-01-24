@@ -10,6 +10,8 @@ int main() {
     battlesnake::BattleSnake bs{};
     httplib::Server server;
 
+    srand(time(NULL));
+
     std::string const SERVER_ID = "bgaechter/battlesnake-starter-cpp";
 
     server.set_post_routing_handler([&SERVER_ID](const auto &req [[maybe_unused]], auto &res) {

@@ -34,10 +34,10 @@ namespace battlesnake {
 
     class Snake {
     public:
-        explicit Snake(json snake);
-        std::vector<Coord> getNextTurnBody();
-        std::string getDirectionStr(Coord destination) const;
-        std::string getMove(Board board) const;
+        explicit Snake(const json& snake);
+        std::vector<Coord> getNextTurnBody() const;
+        std::string getDirectionStr(const Coord& destination) const;
+        std::string getMove(const Board& board) const;
         std::string id;
 
     private:
@@ -54,10 +54,9 @@ namespace battlesnake {
 
     class Board {
     public:
-        explicit Board(json board);
-        Snake getSnake(std::string snake_id);
-        std::vector<Coord> getNeighbors(Coord pos);
-        std::vector<std::vector<bool>> getObstacles();
+        explicit Board(const json& board);
+        std::vector<Coord> getNeighbors(const Coord& pos) const;
+        std::vector<std::vector<bool>> getObstacles() const;
 
     private:
         int height;
@@ -69,7 +68,7 @@ namespace battlesnake {
 
     class RulesetSettings {
     public:
-        explicit RulesetSettings(json rulesetSettings);
+        explicit RulesetSettings(json ruleset_settings);
 
     private:
         int foodspawnChance;
@@ -89,7 +88,7 @@ namespace battlesnake {
 
     class Game {
     public:
-        explicit Game(json game);
+        explicit Game(const json& game);
         std::string id;
 
     private:
@@ -101,7 +100,7 @@ namespace battlesnake {
 
     class GameState {
     public:
-        explicit GameState(json state);
+        explicit GameState(const json& state);
         std::string getMyMove() const;
 
     private:
@@ -131,13 +130,13 @@ namespace battlesnake {
     public:
         BattleSnake();
 
-        std::string GetInfo() const;
+        std::string getInfo() const;
 
-        std::string Start();
+        std::string start();
 
-        std::string Move(json state);
+        std::string make_move(const json& state);
 
-        std::string End();
+        std::string end();
 
     private:
         Info info;

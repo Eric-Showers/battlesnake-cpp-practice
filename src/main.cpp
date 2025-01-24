@@ -39,22 +39,22 @@ int main() {
       });
 
     server.Get("/", [&bs](const httplib::Request &req [[maybe_unused]], httplib::Response &res) {
-        res.set_content(bs.GetInfo(), "application/json");
+        res.set_content(bs.getInfo(), "application/json");
     });
 
     server.Post("/start", [&bs](const httplib::Request &req, httplib::Response &res) {
         auto state = json::parse(req.body);
-        res.set_content(bs.Start(), "text/plain");
+        res.set_content(bs.start(), "text/plain");
     });
 
     server.Post("/move", [&bs](const httplib::Request &req, httplib::Response &res) {
         auto const state = json::parse(req.body);
-        const auto response = bs.Move(state);
+        const auto response = bs.make_move(state);
         res.set_content(response, "application/json");
     });
 
     server.Post("/end", [&bs](const httplib::Request &req [[maybe_unused]], httplib::Response &res) {
-        res.set_content(bs.End(), "text/plain");
+        res.set_content(bs.end(), "text/plain");
     });
   std::cout << "Server listening at http://127.0.0.1:8080" << std::endl;
     server.listen("0.0.0.0", 8080);

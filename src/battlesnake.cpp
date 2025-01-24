@@ -14,19 +14,19 @@ namespace battlesnake {
         info = i;
     }
 
-    std::string BattleSnake::GetInfo() const {
+    std::string BattleSnake::getInfo() const {
         return info.GetInfo();
     }
 
-    std::string BattleSnake::End() {
+    std::string BattleSnake::end() {
         return "End";
     }
 
-    std::string BattleSnake::Move(json state) {
+    std::string BattleSnake::make_move(const json& state) {
         //Print the state
         //std::cout << state.dump() << std::endl;
-        auto const gameState = GameState(std::move(state));
-        //Get next move
+        auto const gameState = GameState(state);
+        //Get my next move
         std::string my_move = gameState.getMyMove();
 
         
@@ -38,7 +38,7 @@ namespace battlesnake {
         return response.dump();
     }
 
-    std::string BattleSnake::Start() {
+    std::string BattleSnake::start() {
         return "";
     }
 
@@ -48,49 +48,40 @@ namespace battlesnake {
     Coord::Coord(int xcoord, int ycoord): x(xcoord), y(ycoord) {
     }
 
-    Board::Board(json board): height(board["height"]), width(board["width"]) {
-        for (const auto &foodCoordinates: board["food"]) {
-            food.emplace_back(foodCoordinates);
+    Board::Board(const json& board): height(board["height"]), width(board["width"]) {
+        for (const auto &food_coordinates: board["food"]) {
+            food.emplace_back(food_coordinates);
         }
-        for (const auto &hazardCoordinates: board["hazards"]) {
-            hazards.emplace_back(hazardCoordinates);
+        for (const auto &hazard_coordinates: board["hazards"]) {
+            hazards.emplace_back(hazard_coordinates);
         }
         for (const auto &snake: board["snakes"]) {
             snakes.emplace_back(snake);
         }
     }
 
-    Snake Board::getSnake(std::string snake_id) {
-        for (Snake s : snakes) {
-            if (snake_id == s.id) {
-                return s;
-            }
-        }
-        throw std::out_of_range("Snake not found!");
-    }
-
     //Returns all adjacent positions which are in-bounds
-    std::vector<Coord> Board::getNeighbors(Coord pos) {
+    std::vector<Coord> Board::getNeighbors(const Coord& pos) const {
         std::vector<Coord> neighbors;
         if (pos.x > 0) {
-            neighbors.push_back(Coord(pos.x - 1, pos.y));
+            neighbors.emplace_back(pos.x - 1, pos.y);
         }
         if (pos.x < width - 1) {
-            neighbors.push_back(Coord(pos.x + 1, pos.y));
+            neighbors.emplace_back(pos.x + 1, pos.y);
         }
         if (pos.y > 0) {
-            neighbors.push_back(Coord(pos.x, pos.y - 1));
+            neighbors.emplace_back(pos.x, pos.y - 1);
         }
         if (pos.y < height - 1) {
-            neighbors.push_back(Coord(pos.x, pos.y + 1));
+            neighbors.emplace_back(pos.x, pos.y + 1);
         }
         return neighbors;
     }
 
-    //Returns 2d vector of bools, true when likely lethal to move into
-    std::vector<std::vector<bool>> Board::getObstacles() {
+    //Returns 2d vector of bools for all board positions, true when likely lethal to move into
+    std::vector<std::vector<bool>> Board::getObstacles() const {
         std::vector<std::vector<bool>> obstacles(height, std::vector<bool>(width, false));
-        for (Snake &s : snakes) {
+        for (const Snake &s : snakes) {
             std::vector<Coord> next_body = s.getNextTurnBody();
             for (Coord &c : next_body) {
                 obstacles[c.y][c.x] = true;
@@ -99,12 +90,12 @@ namespace battlesnake {
         return obstacles;
     }
 
-    Snake::Snake(json snake): head(snake["head"]), customizations(snake["customizations"]) {
+    Snake::Snake(const json& snake): head(snake["head"]), customizations(snake["customizations"]) {
         id = snake["id"];
         name = snake["name"];
         health = snake["health"];
-        for (const auto &snakeBody: snake["body"]) {
-            body.emplace_back(snakeBody);
+        for (const auto &snake_body: snake["body"]) {
+            body.emplace_back(snake_body);
         }
         length = snake["length"];
         shout = snake["shout"];
@@ -124,7 +115,7 @@ namespace battlesnake {
     }
 
     //Returns coords of where this snake's body will be next turn (not head)
-    std::vector<Coord> Snake::getNextTurnBody() {
+    std::vector<Coord> Snake::getNextTurnBody() const {
         std::vector<Coord> next_body = body;
         int i = next_body.size()-1;
         while (next_body[i] == next_body[i-1]) {
@@ -136,7 +127,7 @@ namespace battlesnake {
 
     //Returns strings up, down, left, or right based on relative direction from snake's head
     // destination must be exactly one space away from snake's head
-    std::string Snake::getDirectionStr(Coord destination) const {
+    std::string Snake::getDirectionStr(const Coord& destination) const {
         assert((abs(head.x - destination.x) + abs(head.y - destination.y)) == 1);
 
         if (head.x == destination.x) {
@@ -154,13 +145,13 @@ namespace battlesnake {
         }
     }
 
-    std::string Snake::getMove(Board board) const {
+    std::string Snake::getMove(const Board& board) const {
         //Get in-bounds adjacent coords
         std::vector<Coord> neighbors = board.getNeighbors(head);
         //Avoid obstacles
         std::vector<std::vector<bool>> obstacles = board.getObstacles();
         std::vector<Coord> obstacle_free;
-        for (Coord c : neighbors) {
+        for (const Coord& c : neighbors) {
             if (!obstacles[c.y][c.x]) {
                 obstacle_free.push_back(c);
             }
@@ -168,7 +159,7 @@ namespace battlesnake {
         if (obstacle_free.size() == 0) {
             std::cout << "Crap I'm surrounded!" << std::endl;
             std::cout << "Neighbors: \n";
-            for (Coord c : neighbors) {
+            for (const Coord& c : neighbors) {
                 std::cout << c.x << ", " << c.y << std::endl;
             }
             std::cout << "Obstacles: \n";
@@ -190,10 +181,10 @@ namespace battlesnake {
         }
     }
 
-    RulesetSettings::RulesetSettings(json rulesetSettings): foodspawnChance(rulesetSettings["foodSpawnChance"]),
-                                                            minimumFood(rulesetSettings["minimumFood"]) {
-        if(rulesetSettings.contains("hazardDamagePerTurn")) {
-            hazardDamagePerTurn = rulesetSettings["hazardDamagePerTurn"];
+    RulesetSettings::RulesetSettings(json ruleset_settings): foodspawnChance(ruleset_settings["foodSpawnChance"]),
+                                                            minimumFood(ruleset_settings["minimumFood"]) {
+        if(ruleset_settings.contains("hazardDamagePerTurn")) {
+            hazardDamagePerTurn = ruleset_settings["hazardDamagePerTurn"];
         } else {
             hazardDamagePerTurn = 0;
         }
@@ -204,14 +195,14 @@ namespace battlesnake {
         version = ruleset["version"];
     }
 
-    Game::Game(json game): ruleset(game["ruleset"]) {
+    Game::Game(const json& game): ruleset(game["ruleset"]) {
         id = game["id"];
         map = game["map"];
         source = game["source"];
         timeout = game["timeout"];
     }
 
-    GameState::GameState(json state): game(state["game"]), board(state["board"]), you(Snake{state["you"]}) {
+    GameState::GameState(const json& state): game(state["game"]), board(state["board"]), you(Snake{state["you"]}) {
         turn = state["turn"];
     }
 

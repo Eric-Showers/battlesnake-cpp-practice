@@ -1,9 +1,8 @@
-# A simple Battlesnake written in C++
+# Battlesnake C++ Practice Project
 
-This is a basic implementation of the [Battlesnake API](https://docs.battlesnake.com/references/api). It's a great
-starting point for anyone wanting to program their first Battlesnake using C++. It comes ready to use
-with [Repl.it](https://repl.it) and provides instructions below for getting started. It can also be deployed
-to [Heroku](https://heroku.com), or any other cloud provider you'd like.
+The intention of this project is to use a language that I am learning and apply it to a problem which I am familiar with. Through this work I hope to become proficient with the C++ language.
+
+This repo is a fork of https://github.com/bgaechter/battlesnake-starter-cpp
 
 ## Technologies
 
@@ -19,37 +18,7 @@ The project https://github.com/wrenger/battlesnake-downloader extract frame from
 ## Prerequisites
 
 - [Battlesnake Account](https://play.battlesnake.com)
-- [Repl.it Account](https://repl.it)
 - [GitHub Account](https://github.com) (Optional)
-
-## Running Your Battlesnake on [Repl.it](https://repl.it)
-
-[![Run on Repl.it](https://repl.it/badge/github/bgaechter/battlesnake-starter-cpp)](https://repl.it/github/bgaechter/battlesnake-starter-cpp)
-
-1. Login to your [Repl.it](https://repl.it) account.
-
-2. Click the 'Run on Repl.it' button above, or visit the following
-   URL: https://repl.it/github/bgaechter/battlesnake-starter-cpp.
-
-3. You should see your Repl being initialized - this might take a few moments to complete.
-
-4. Once your Repl is ready to run, click `Run ▶️` at the top of the screen. You should see Express (and any other
-   dependencies) being installed. Once installation is complete, your Battlesnake server will start and you should see
-   the following:
-
-    ```
-    Server listening at http://127.0.0.1:8080
-    ```
-
-5. Above the terminal window you'll see the live output from your Battlesnake server, including its URL. That URL will
-   be the URL used to create your Battlesnake in the next step. If you visit that URL in your browser, you should see
-   text similar to this:
-
-    ```
-    {"apiversion": "1", "author": "C++", "color": "#c0ffee", "head": "default", "tail": "default"}
-    ```
-
-This means your Battlesnake is running correctly on Repl.it.
 
 **At this point your Battlesnake is live and ready to enter games!**
 

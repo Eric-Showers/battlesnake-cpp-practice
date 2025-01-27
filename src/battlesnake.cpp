@@ -58,6 +58,19 @@ namespace battlesnake {
         for (const auto &snake: board["snakes"]) {
             snakes.emplace_back(snake);
         }
+        // Create obstacles and food array for faster retrieval
+        obstacles_array = std::vector<std::vector<int>>(height, std::vector<int>(width, 0));
+        for (const Snake& s : snakes) {
+            std::vector<Coord> sbody = s.getBody();
+            int slength = s.getLength();
+            for (int i=0; i<slength-1; i++) {
+                obstacles_array[sbody[i].y][sbody[i].x] = slength - (i+1);
+            }
+        }
+        food_array = std::vector<std::vector<bool>>(height, std::vector<bool>(width, false));
+        for (const Coord& c : food) {
+            food_array[c.y][c.x] = true;
+        }
     }
 
     //Returns all adjacent positions which are in-bounds
@@ -79,15 +92,89 @@ namespace battlesnake {
     }
 
     //Returns 2d vector of bools for all board positions, true when likely lethal to move into
-    std::vector<std::vector<bool>> Board::getObstacles() const {
-        std::vector<std::vector<bool>> obstacles(height, std::vector<bool>(width, false));
-        for (const Snake &s : snakes) {
-            std::vector<Coord> next_body = s.getNextTurnBody();
-            for (Coord &c : next_body) {
-                obstacles[c.y][c.x] = true;
+    std::vector<std::vector<int>> Board::getObstacles() const {
+        return obstacles_array;
+    }
+
+    //Returns 2d vector of bools for all food positions
+    std::vector<std::vector<bool>> Board::getFood() const {
+        return food_array;
+    }
+
+    //Returns unordered_map<snake_id, snake_length> 
+    std::unordered_map<std::string, int> Board::getSnakeLengths() const {
+        std::unordered_map<std::string, int> snake_lengths;
+        for (const Snake& s : snakes) {
+            snake_lengths.insert({s.id, s.getLength()});
+        }
+        return snake_lengths;
+    }
+
+    //Simulates available movement options from a given position, sim_turns in the future
+    std::vector<Coord> Board::simulateOptions(const Coord& pos, const int& sim_time) const {
+        std::vector<Coord> neighbors = getNeighbors(pos);
+        std::vector<Coord> safe;
+        for (Coord c : neighbors) {
+            if (sim_time > obstacles_array[c.y][c.x]) {
+                safe.push_back(c);
             }
         }
-        return obstacles;
+        return safe;
+    }
+
+    //Uses an optimistic DFS search to find the longest possible path from the starting position
+    // optimistic because it doesn't account for the movement of snake heads
+    int Board::measureVolume(const Coord& start, const int& subject_length) const {
+        int volume = 0;
+        std::vector<Coord> frontier_heads = {start};
+        std::vector<std::vector<Coord>> frontier_paths = {{start}};
+        std::vector<int> frontier_food_in_paths;
+        if (food_array[start.y][start.x]) {
+            frontier_food_in_paths.push_back(1);
+        } else {
+            frontier_food_in_paths.push_back(0);
+        }
+        std::vector<std::vector<int>> visited = std::vector<std::vector<int>>(
+            height, std::vector<int>(width, 0)
+        );
+        while (volume <= subject_length) {
+            if (frontier_heads.empty()) {
+                return volume;
+            }
+            Coord next_pos = frontier_heads.back();
+            frontier_heads.pop_back();
+            std::vector<Coord> cur_path = frontier_paths.back();
+            frontier_paths.pop_back();
+            int food_in_path = frontier_food_in_paths.back();
+            frontier_food_in_paths.pop_back();
+            int cur_path_length = static_cast<int>(cur_path.size());
+            if (cur_path_length > volume) {
+                volume = cur_path_length;
+            }
+            std::vector<Coord> to_expand = simulateOptions(next_pos, cur_path_length);
+            for (Coord c : to_expand) {
+                //Check if this path intersects itself
+                for (int i=0; i<cur_path_length; i++) {
+                    if (c == cur_path[i] && (cur_path_length - i) < (subject_length+1)) {
+                        continue;
+                    }
+                }
+                //Check if this is longest path found to this point
+                if (cur_path_length+1 > visited[c.y][c.x]) {
+                    //Mark visited and expand
+                    visited[c.y][c.x] = cur_path_length + 1;
+                    cur_path.push_back(c);
+                    frontier_heads.push_back(c);
+                    frontier_paths.push_back(cur_path);
+                    if (food_array[c.y][c.x]) {
+                        frontier_food_in_paths.push_back(1);
+                    } else {
+                        frontier_food_in_paths.push_back(0);
+                    }
+                }
+            }
+        }
+        return volume;
     }
 
     Snake::Snake(const json& snake): head(snake["head"]), customizations(snake["customizations"]) {
@@ -99,7 +186,6 @@ namespace battlesnake {
         }
         length = snake["length"];
         shout = snake["shout"];
-        expanding = false;
 
         // The implementation varies, sometime it is an int sometimes a string
         if(snake["latency"].is_string()) {
@@ -114,15 +200,12 @@ namespace battlesnake {
         }
     }
 
-    //Returns coords of where this snake's body will be next turn (not head)
-    std::vector<Coord> Snake::getNextTurnBody() const {
-        std::vector<Coord> next_body = body;
-        int i = next_body.size()-1;
-        while (next_body[i] == next_body[i-1]) {
-            next_body.pop_back();
-            i--;
-        }
-        return next_body;
+    int Snake::getLength() const {
+        return length;
+    }
+
+    std::vector<Coord> Snake::getBody() const {
+        return body;
     }
 
     //Returns strings up, down, left, or right based on relative direction from snake's head
@@ -145,18 +228,60 @@ namespace battlesnake {
         }
     }
 
+    //Retuns a bool that is true if this snake needs to eat soon
+    bool Snake:: getHunger(const Board& board) const {
+        //Hungry no matter what, once health get's low
+        if (health < 20) {
+            return true;
+        }
+        std::unordered_map<std::string, int> snake_lengths = board.getSnakeLengths();
+        //Hungry anytime another snake is at least as big as us
+        for (auto& id_length : snake_lengths) {
+            if (id_length.second >= length  && id_length.first != id) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     std::string Snake::getMove(const Board& board) const {
+        //Set priorities
+        bool hungry = getHunger(board);
         //Get in-bounds adjacent coords
         std::vector<Coord> neighbors = board.getNeighbors(head);
         //Avoid obstacles
-        std::vector<std::vector<bool>> obstacles = board.getObstacles();
+        std::vector<std::vector<int>> obstacles = board.getObstacles();
         std::vector<Coord> obstacle_free;
         for (const Coord& c : neighbors) {
             if (!obstacles[c.y][c.x]) {
                 obstacle_free.push_back(c);
             }
         }
-        if (obstacle_free.size() == 0) {
+        if (!obstacle_free.empty()) {
+            std::vector<Coord> safe_volumes;
+            for (Coord c : obstacle_free) {
+                int volume = board.measureVolume(c, length);
+                if (volume >= length) {
+                    safe_volumes.push_back(c);
+                }
+            }
+            if (!safe_volumes.empty()) {
+                //Choose available food if hungry, otherwise random
+                if (hungry) {
+                    std::vector<std::vector<bool>> food_array = board.getFood();
+                    for (const Coord& c : safe_volumes) {
+                        if (food_array[c.y][c.x]) {
+                            return getDirectionStr(c);
+                        }
+                    }
+                } else {
+                    return getDirectionStr(safe_volumes[rand() % safe_volumes.size()]);
+                }
+            } else {
+                std::cout << "Crap I'm running out of room!" << std::endl;
+                return getDirectionStr(obstacle_free[rand() % obstacle_free.size()]);
+            }
+        } else {
             std::cout << "Crap I'm surrounded!" << std::endl;
             std::cout << "Neighbors: \n";
             for (const Coord& c : neighbors) {
@@ -164,21 +289,16 @@ namespace battlesnake {
             }
             std::cout << "Obstacles: \n";
             for (int i=obstacles.size()-1; i>=0; i--) {
-                std::vector<bool>& row = obstacles[i];
-                for (bool cell : row) {
-                    if (cell) {
-                        std::cout << "X";
-                    } else {
-                        std::cout << "O";
-                    }
+                std::vector<int>& row = obstacles[i];
+                for (int cell : row) {
+                    std::cout << cell;
                 }
                 std::cout << "\n";
             }
             return "up";
-        } else {
-            //Choose randomly from options
-            return getDirectionStr(obstacle_free[rand() % obstacle_free.size()]);
         }
+        std::cout << "Uh Oh :|" << std::endl;
+        return "up";
     }
 
     RulesetSettings::RulesetSettings(json ruleset_settings): foodspawnChance(ruleset_settings["foodSpawnChance"]),
@@ -204,6 +324,7 @@ namespace battlesnake {
 
     GameState::GameState(const json& state): game(state["game"]), board(state["board"]), you(Snake{state["you"]}) {
         turn = state["turn"];
+        std::cout << "Turn " << turn << ":\n"; 
     }
 
     std::string GameState::getMyMove() const {

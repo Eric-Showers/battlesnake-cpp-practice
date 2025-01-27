@@ -35,9 +35,12 @@ namespace battlesnake {
     class Snake {
     public:
         explicit Snake(const json& snake);
-        std::vector<Coord> getNextTurnBody() const;
+        int getLength() const;
+        std::vector<Coord> getBody() const;
         std::string getDirectionStr(const Coord& destination) const;
+        bool getHunger(const Board& board) const;
         std::string getMove(const Board& board) const;
+
         std::string id;
 
     private:
@@ -49,21 +52,27 @@ namespace battlesnake {
         int latency;
         std::string shout;
         Customizations customizations;
-        bool expanding;
     };
 
     class Board {
     public:
         explicit Board(const json& board);
         std::vector<Coord> getNeighbors(const Coord& pos) const;
-        std::vector<std::vector<bool>> getObstacles() const;
+        std::vector<std::vector<int>> getObstacles() const;
+        std::vector<std::vector<bool>> getFood() const;
+        std::unordered_map<std::string, int> getSnakeLengths() const;
+        std::vector<Coord> simulateOptions(const Coord& pos, const int& sim_time) const;
+        int measureVolume(const Coord& start, const int& subject_length) const;
 
-    private:
         int height;
         int width;
+
+    private:
         std::vector<Coord> food;
         std::vector<Coord> hazards;
         std::vector<Snake> snakes;
+        std::vector<std::vector<int>> obstacles_array;
+        std::vector<std::vector<bool>> food_array;
     };
 
     class RulesetSettings {

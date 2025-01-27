@@ -6,6 +6,7 @@
 
 #include <iostream>
 #include <utility>
+#include <iomanip>
 
 
 namespace battlesnake {
@@ -115,7 +116,7 @@ namespace battlesnake {
         std::vector<Coord> neighbors = getNeighbors(pos);
         std::vector<Coord> safe;
         for (Coord c : neighbors) {
-            if (sim_time > obstacles_array[c.y][c.x]) {
+            if (sim_time >= obstacles_array[c.y][c.x]) {
                 safe.push_back(c);
             }
         }
@@ -128,12 +129,6 @@ namespace battlesnake {
         int volume = 0;
         std::vector<Coord> frontier_heads = {start};
         std::vector<std::vector<Coord>> frontier_paths = {{start}};
-        std::vector<int> frontier_food_in_paths;
-        if (food_array[start.y][start.x]) {
-            frontier_food_in_paths.push_back(1);
-        } else {
-            frontier_food_in_paths.push_back(0);
-        }
         std::vector<std::vector<int>> visited = std::vector<std::vector<int>>(
             height, std::vector<int>(width, 0)
         );
@@ -145,19 +140,21 @@ namespace battlesnake {
             frontier_heads.pop_back();
             std::vector<Coord> cur_path = frontier_paths.back();
             frontier_paths.pop_back();
-            int food_in_path = frontier_food_in_paths.back();
-            frontier_food_in_paths.pop_back();
             int cur_path_length = static_cast<int>(cur_path.size());
             if (cur_path_length > volume) {
                 volume = cur_path_length;
             }
             std::vector<Coord> to_expand = simulateOptions(next_pos, cur_path_length);
             for (Coord c : to_expand) {
-                //Check if this path intersects itself
+                //Check if this path intersects itself to soon
+                bool self_intersect = false;
                 for (int i=0; i<cur_path_length; i++) {
                     if (c == cur_path[i] && (cur_path_length - i) < (subject_length+1)) {
-                        continue;
+                        self_intersect = true;
                     }
+                }
+                if (self_intersect) {
+                    continue;
                 }
                 //Check if this is longest path found to this point
                 if (cur_path_length+1 > visited[c.y][c.x]) {
@@ -166,11 +163,6 @@ namespace battlesnake {
                     cur_path.push_back(c);
                     frontier_heads.push_back(c);
                     frontier_paths.push_back(cur_path);
-                    if (food_array[c.y][c.x]) {
-                        frontier_food_in_paths.push_back(1);
-                    } else {
-                        frontier_food_in_paths.push_back(0);
-                    }
                 }
             }
         }
@@ -258,9 +250,20 @@ namespace battlesnake {
             }
         }
         if (!obstacle_free.empty()) {
+            std::cout << "Obstacles: \n";
+            for (int i=obstacles.size()-1; i>=0; i--) {
+                std::vector<int>& row = obstacles[i];
+                for (int cell : row) {
+                    std::cout.fill(' ');
+                    std::cout.width(3);
+                    std::cout << cell;
+                }
+                std::cout << "\n";
+            }
             std::vector<Coord> safe_volumes;
             for (Coord c : obstacle_free) {
                 int volume = board.measureVolume(c, length);
+                std::cout << "("<<c.x<<", "<<c.y<<"): "<<volume<<std::endl;
                 if (volume >= length) {
                     safe_volumes.push_back(c);
                 }
@@ -291,6 +294,8 @@ namespace battlesnake {
             for (int i=obstacles.size()-1; i>=0; i--) {
                 std::vector<int>& row = obstacles[i];
                 for (int cell : row) {
+                    std::cout.fill(' ');
+                    std::cout.width(3);
                     std::cout << cell;
                 }
                 std::cout << "\n";

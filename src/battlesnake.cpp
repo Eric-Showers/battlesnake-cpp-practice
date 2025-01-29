@@ -104,7 +104,7 @@ namespace battlesnake {
         return food_array;
     }
 
-    std::vector<std::vector<int>> Board::getHeads() const {
+    std::vector<std::vector<int>> Board::getHeadsArray() const {
         return heads_array;
     }
 
@@ -112,7 +112,7 @@ namespace battlesnake {
     std::unordered_map<std::string, int> Board::getSnakeLengths() const {
         std::unordered_map<std::string, int> snake_lengths;
         for (const Snake& s : snakes) {
-            snake_lengths.insert({s.id, s.getLength()});
+            snake_lengths.insert({s.m_id, s.getLength()});
         }
         return snake_lengths;
     }
@@ -122,7 +122,7 @@ namespace battlesnake {
         std::vector<Coord> neighbors = getNeighbors(pos);
         std::vector<Coord> safe;
         for (Coord c : neighbors) {
-            if (sim_time >= obstacles_array[c.y][c.x]) {
+            if (sim_time > obstacles_array[c.y][c.x]) {
                 safe.push_back(c);
             }
         }
@@ -175,50 +175,50 @@ namespace battlesnake {
         return volume;
     }
 
-    Snake::Snake(const json& snake): head(snake["head"]), customizations(snake["customizations"]) {
-        id = snake["id"];
-        name = snake["name"];
-        health = snake["health"];
+    Snake::Snake(const json& snake): m_head(snake["head"]), m_customizations(snake["customizations"]) {
+        m_id = snake["id"];
+        m_name = snake["name"];
+        m_health = snake["health"];
         for (const auto &snake_body: snake["body"]) {
-            body.emplace_back(snake_body);
+            m_body.emplace_back(snake_body);
         }
-        length = snake["length"];
-        shout = snake["shout"];
+        m_length = snake["length"];
+        m_shout = snake["shout"];
 
         // The implementation varies, sometime it is an int sometimes a string
         if(snake["latency"].is_string()) {
             try {
-                latency = std::stoi(snake["latency"].get<std::string>());
+                m_latency = std::stoi(snake["latency"].get<std::string>());
             } catch (...) {
                 // Not a valid number
-                latency = 0;
+                m_latency = 0;
             }
         } else if(snake["latency"].is_number()) {
-            latency = snake["latency"];
+            m_latency = snake["latency"];
         }
     }
 
     int Snake::getLength() const {
-        return length;
+        return m_length;
     }
 
     std::vector<Coord> Snake::getBody() const {
-        return body;
+        return m_body;
     }
 
     //Returns strings up, down, left, or right based on relative direction from snake's head
     // destination must be exactly one space away from snake's head
     std::string Snake::getDirectionStr(const Coord& destination) const {
-        assert((abs(head.x - destination.x) + abs(head.y - destination.y)) == 1);
+        assert((abs(m_head.x - destination.x) + abs(m_head.y - destination.y)) == 1);
 
-        if (head.x == destination.x) {
-            if (head.y < destination.y) {
+        if (m_head.x == destination.x) {
+            if (m_head.y < destination.y) {
                 return "up";
             } else {
                 return "down";
             }
         } else {
-            if (head.x < destination.x) {
+            if (m_head.x < destination.x) {
                 return "right";
             } else {
                 return "left";
@@ -227,91 +227,136 @@ namespace battlesnake {
     }
 
     //Retuns a bool that is true if this snake needs to eat soon
-    bool Snake:: getHunger(const Board& board) const {
-        //Hungry no matter what, once health get's low
-        if (health < 20) {
+    bool Snake::getHunger(const Board& board) const {
+        //Hungry no matter what, once health gets low
+        if (m_health < 20) {
             return true;
         }
         std::unordered_map<std::string, int> snake_lengths = board.getSnakeLengths();
         //Hungry anytime we aren't the biggest snake by 2
         for (auto& id_length : snake_lengths) {
-            if (id_length.second >= length+2  && id_length.first != id) {
+            if (id_length.second >= m_length+2  && id_length.first != m_id) {
                 return true;
             }
         }
         return false;
     }
 
+    //Filters out certain death moves and then compares different risk categories
     std::string Snake::getMove(const Board& board) const {
-        //Set priorities
-        bool hungry = getHunger(board);
         //Get in-bounds adjacent coords
-        std::vector<Coord> neighbors = board.getNeighbors(head);
-        //Avoid obstacles
-        std::vector<std::vector<int>> obstacles = board.getObstacles();
-        std::vector<std::vector<int>> heads = board.getHeads();
-        std::vector<Coord> obstacle_free;
-        std::vector<Coord> head_on_risk;
-        for (const Coord& c : neighbors) {
-            if (!obstacles[c.y][c.x]) {
-                bool head_risk = false;
-                std::vector<Coord> maybe_heads = board.getNeighbors(c);
-                for (Coord pos : maybe_heads) {
-                    if (!(pos == head) && heads[pos.y][pos.x] >= length) {
-                        head_risk = true;
-                        head_on_risk.push_back(c);
-                        break;
+        std::vector<Coord> candidate_moves = board.getNeighbors(m_head);
+        //Filter out any self body parts
+        candidate_moves.erase(
+            std::remove_if(
+                candidate_moves.begin(), candidate_moves.end(),
+                [this](const Coord& c) {
+                    //Ignore last body part as it will move forwards
+                    return std::find(m_body.begin(), m_body.end() - 1, c) != m_body.end() - 1;
+                }
+            ),
+            candidate_moves.end()
+        );
+        //Filter out body parts of other snakes above 1 health
+        candidate_moves.erase(
+            std::remove_if(
+                candidate_moves.begin(), candidate_moves.end(),
+                [board](const Coord& c) {
+                    for (const Snake& s : board.snakes) {
+                        if (std::find(s.m_body.begin(), s.m_body.end() - 1, c) != s.m_body.end()-1) {
+                            if (s.m_health > 1) {
+                                return true;
+                            } else {
+                                return false;
+                            }
+                        }
                     }
+                    return false;
                 }
-                if (!head_risk) {
-                    obstacle_free.push_back(c);
-                }
-            }
-        }
-        if (!obstacle_free.empty()) {
-            std::vector<Coord> safe_volumes;
-            for (Coord c : obstacle_free) {
-                int volume = board.measureVolume(c, length);
-                std::cout << "("<<c.x<<", "<<c.y<<"): "<<volume<<std::endl;
-                if (volume >= length) {
-                    safe_volumes.push_back(c);
-                }
-            }
-            if (!safe_volumes.empty()) {
-                //Choose available food if hungry, otherwise random
-                if (hungry) {
-                    std::vector<std::vector<bool>> food_array = board.getFood();
-                    for (const Coord& c : safe_volumes) {
-                        if (food_array[c.y][c.x]) {
-                            return getDirectionStr(c);
+            ),
+            candidate_moves.end()
+        );
+        if (!candidate_moves.empty()) {
+            //Now do risk analysis
+            std::vector<int> final_risks;
+            int high_score = -9999;
+            std::cout << "Candidate scores: \n";
+            std::cout << "move, final, volume, head on, eating, hunger\n";
+            for (const Coord& c : candidate_moves) {
+                int volume;
+                int head_on_risk = 0;
+                int eating_risk = 0;
+                int hunger_score = 0;
+                volume = board.measureVolume(c, m_length);
+                for (const Coord& adj_c : board.getNeighbors(c)) {
+                    if (!(adj_c == m_head) && board.heads_array[adj_c.y][adj_c.x] != 0) {
+                        if (board.heads_array[adj_c.y][adj_c.x] >= m_length) {
+                            head_on_risk = -1;
+                        } else if (board.heads_array[adj_c.y][adj_c.x] < m_length) {
+                            head_on_risk = 1;
                         }
                     }
                 }
-                //Not hungry, or no food available
-                return getDirectionStr(safe_volumes[rand() % safe_volumes.size()]);
-            } else {
-                std::cout << "Crap I'm running out of room!" << std::endl;
-                return getDirectionStr(obstacle_free[rand() % obstacle_free.size()]);
-            }
-        } else {
-            if(!head_on_risk.empty()) {
-                return getDirectionStr(head_on_risk[rand() % head_on_risk.size()]);
-            }
-            std::cout << "Crap I'm surrounded!" << std::endl;
-            std::cout << "Neighbors: \n";
-            for (const Coord& c : neighbors) {
-                std::cout << c.x << ", " << c.y << std::endl;
-            }
-            std::cout << "Obstacles: \n";
-            for (int i=obstacles.size()-1; i>=0; i--) {
-                std::vector<int>& row = obstacles[i];
-                for (int cell : row) {
-                    std::cout.fill(' ');
-                    std::cout.width(3);
-                    std::cout << cell;
+                //If a snakes body is still a candidate then it MUST be at 1 health
+                //So check if there is risk of this snake surviving the turn by eating
+                if (!board.obstacles_array[c.y][c.x] == 0) {
+                    //TODO: better way to look this up
+                    int could_eat = 1;
+                    for (const Snake& s : board.snakes) {
+                        for (const Coord& body_part : s.m_body) {
+                            if (c == body_part) {
+                                //Found the snake in question, check if it can eat
+                                std::vector<Coord> possible_moves = board.getNeighbors(s.m_head);
+                                for (const Coord& one_move : possible_moves) {
+                                    if (board.food_array[one_move.y][one_move.x]) {
+                                        could_eat = -1;
+                                        break;
+                                    }
+                                }
+                            }
+                            if (could_eat == -1) {
+                                break;
+                            }
+                        }
+                        if (could_eat == -1) {
+                            break;
+                        }
+                    }
+                    eating_risk = could_eat;
                 }
-                std::cout << "\n";
+                //TODO: Use pathfinding to food
+                if (getHunger(board)) {
+                    if (board.food_array[c.y][c.x]) {
+                        hunger_score = 1;
+                    }
+                }
+                int final_risk = 0;
+                if (volume < m_length) {final_risk -= 100;}
+                final_risk += head_on_risk * 10;
+                final_risk += eating_risk * 10;
+                final_risk += hunger_score;
+                if (final_risk > high_score) {
+                    high_score = final_risk;
+                }
+                std::cout << getDirectionStr(c) << ": ";
+                std::cout << final_risk << ", ";
+                std::cout << volume << ", ";
+                std::cout << head_on_risk << ", ";
+                std::cout << eating_risk << ", ";
+                std::cout << hunger_score << std::endl;
+                final_risks.push_back(final_risk);
             }
+            std::cout << "High score: " << high_score << std::endl;
+            //Now choose move from candidates with highest risk score
+            std::vector<Coord> final_candidates;
+            for (int i=0; i<candidate_moves.size(); i++) {
+                if (final_risks[i] == high_score) {
+                    final_candidates.push_back(candidate_moves[i]);
+                }
+            }
+            return getDirectionStr(final_candidates[rand() % final_candidates.size()]);
+        } else {
+            std::cout << "Crap I'm surrounded!" << std::endl;
             return "up";
         }
         std::cout << "Uh Oh :|" << std::endl;
@@ -328,7 +373,7 @@ namespace battlesnake {
     }
 
     Ruleset::Ruleset(json ruleset): settings(ruleset["settings"]) {
-        name = ruleset["name"];
+        m_name = ruleset["name"];
         version = ruleset["version"];
     }
 

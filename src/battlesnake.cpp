@@ -59,11 +59,13 @@ namespace battlesnake {
         for (const auto &snake: board["snakes"]) {
             snakes.emplace_back(snake);
         }
-        // Create obstacles and food array for faster retrieval
+        // Create obstacles, heads and food array for faster retrieval
         obstacles_array = std::vector<std::vector<int>>(height, std::vector<int>(width, 0));
+        heads_array = std::vector<std::vector<int>>(height, std::vector<int>(width, 0));
         for (const Snake& s : snakes) {
             std::vector<Coord> sbody = s.getBody();
             int slength = s.getLength();
+            heads_array[sbody[0].y][sbody[0].x] = slength;
             for (int i=0; i<slength-1; i++) {
                 obstacles_array[sbody[i].y][sbody[i].x] = slength - (i+1);
             }
@@ -100,6 +102,10 @@ namespace battlesnake {
     //Returns 2d vector of bools for all food positions
     std::vector<std::vector<bool>> Board::getFood() const {
         return food_array;
+    }
+
+    std::vector<std::vector<int>> Board::getHeads() const {
+        return heads_array;
     }
 
     //Returns unordered_map<snake_id, snake_length> 
@@ -149,7 +155,7 @@ namespace battlesnake {
                 //Check if this path intersects itself to soon
                 bool self_intersect = false;
                 for (int i=0; i<cur_path_length; i++) {
-                    if (c == cur_path[i] && (cur_path_length - i) < (subject_length+1)) {
+                    if (c == cur_path[i] && (cur_path_length - i) <= (subject_length)) {
                         self_intersect = true;
                     }
                 }
@@ -227,9 +233,9 @@ namespace battlesnake {
             return true;
         }
         std::unordered_map<std::string, int> snake_lengths = board.getSnakeLengths();
-        //Hungry anytime another snake is at least as big as us
+        //Hungry anytime we aren't the biggest snake by 2
         for (auto& id_length : snake_lengths) {
-            if (id_length.second >= length  && id_length.first != id) {
+            if (id_length.second >= length+2  && id_length.first != id) {
                 return true;
             }
         }
@@ -243,23 +249,26 @@ namespace battlesnake {
         std::vector<Coord> neighbors = board.getNeighbors(head);
         //Avoid obstacles
         std::vector<std::vector<int>> obstacles = board.getObstacles();
+        std::vector<std::vector<int>> heads = board.getHeads();
         std::vector<Coord> obstacle_free;
+        std::vector<Coord> head_on_risk;
         for (const Coord& c : neighbors) {
             if (!obstacles[c.y][c.x]) {
-                obstacle_free.push_back(c);
+                bool head_risk = false;
+                std::vector<Coord> maybe_heads = board.getNeighbors(c);
+                for (Coord pos : maybe_heads) {
+                    if (!(pos == head) && heads[pos.y][pos.x] >= length) {
+                        head_risk = true;
+                        head_on_risk.push_back(c);
+                        break;
+                    }
+                }
+                if (!head_risk) {
+                    obstacle_free.push_back(c);
+                }
             }
         }
         if (!obstacle_free.empty()) {
-            std::cout << "Obstacles: \n";
-            for (int i=obstacles.size()-1; i>=0; i--) {
-                std::vector<int>& row = obstacles[i];
-                for (int cell : row) {
-                    std::cout.fill(' ');
-                    std::cout.width(3);
-                    std::cout << cell;
-                }
-                std::cout << "\n";
-            }
             std::vector<Coord> safe_volumes;
             for (Coord c : obstacle_free) {
                 int volume = board.measureVolume(c, length);
@@ -277,14 +286,17 @@ namespace battlesnake {
                             return getDirectionStr(c);
                         }
                     }
-                } else {
-                    return getDirectionStr(safe_volumes[rand() % safe_volumes.size()]);
                 }
+                //Not hungry, or no food available
+                return getDirectionStr(safe_volumes[rand() % safe_volumes.size()]);
             } else {
                 std::cout << "Crap I'm running out of room!" << std::endl;
                 return getDirectionStr(obstacle_free[rand() % obstacle_free.size()]);
             }
         } else {
+            if(!head_on_risk.empty()) {
+                return getDirectionStr(head_on_risk[rand() % head_on_risk.size()]);
+            }
             std::cout << "Crap I'm surrounded!" << std::endl;
             std::cout << "Neighbors: \n";
             for (const Coord& c : neighbors) {

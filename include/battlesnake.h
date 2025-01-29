@@ -41,17 +41,17 @@ namespace battlesnake {
         bool getHunger(const Board& board) const;
         std::string getMove(const Board& board) const;
 
-        std::string id;
+        std::string m_id;
+        std::vector<Coord> m_body;
 
     private:
-        std::string name;
-        int health;
-        std::vector<Coord> body;
-        Coord head;
-        int length;
-        int latency;
-        std::string shout;
-        Customizations customizations;
+        std::string m_name;
+        int m_health;
+        Coord m_head;
+        int m_length;
+        int m_latency;
+        std::string m_shout;
+        Customizations m_customizations;
     };
 
     class Board {
@@ -60,21 +60,21 @@ namespace battlesnake {
         std::vector<Coord> getNeighbors(const Coord& pos) const;
         std::vector<std::vector<int>> getObstacles() const;
         std::vector<std::vector<bool>> getFood() const;
-        std::vector<std::vector<int>> getHeads() const;
+        std::vector<std::vector<int>> getHeadsArray() const;
         std::unordered_map<std::string, int> getSnakeLengths() const;
         std::vector<Coord> simulateOptions(const Coord& pos, const int& sim_time) const;
         int measureVolume(const Coord& start, const int& subject_length) const;
 
         int height;
         int width;
+        std::vector<Snake> snakes;
+        std::vector<std::vector<int>> heads_array;
+        std::vector<std::vector<int>> obstacles_array;
+        std::vector<std::vector<bool>> food_array;
 
     private:
         std::vector<Coord> food;
         std::vector<Coord> hazards;
-        std::vector<Snake> snakes;
-        std::vector<std::vector<int>> obstacles_array;
-        std::vector<std::vector<bool>> food_array;
-        std::vector<std::vector<int>> heads_array;
     };
 
     class RulesetSettings {
@@ -92,7 +92,7 @@ namespace battlesnake {
         explicit Ruleset(json ruleset);
 
     private:
-        std::string name;
+        std::string m_name;
         std::string version;
         RulesetSettings settings;
     };

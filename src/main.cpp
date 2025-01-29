@@ -6,7 +6,11 @@
 
 using json = nlohmann::json;
 
-int main() {
+int main(int argc, char *argv[]) {
+    int port_num = -1;
+    if (argc > 1) {
+        port_num = std::stoi(argv[1]);
+    }
     battlesnake::BattleSnake bs{};
     httplib::Server server;
 
@@ -56,6 +60,11 @@ int main() {
     server.Post("/end", [&bs](const httplib::Request &req [[maybe_unused]], httplib::Response &res) {
         res.set_content(bs.end(), "text/plain");
     });
-  std::cout << "Server listening at http://127.0.0.1:8080" << std::endl;
-    server.listen("0.0.0.0", 8080);
+    if (port_num == -1) {
+        std::cout << "Server listening at http://127.0.0.1:8080" << std::endl;
+        server.listen("0.0.0.0", 8080);
+    } else {
+        std::cout << "Server listening at http://127.0.0.1:"<< port_num << std::endl;
+        server.listen("0.0.0.0", port_num);
+    }
 }

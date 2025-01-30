@@ -64,17 +64,30 @@ namespace battlesnake {
         std::unordered_map<std::string, int> getSnakeLengths() const;
         std::vector<Coord> simulateOptions(const Coord& pos, const int& sim_time) const;
         int measureVolume(const Coord& start, const int& subject_length) const;
+        int manDist(const Coord& start_pos, const Coord& end_pos) const;
+        std::vector<Coord> aStar(const Coord& start_pos, const Coord& end_pos) const;
+        int getFoodDist(const Coord& pos) const;
 
-        int height;
-        int width;
-        std::vector<Snake> snakes;
-        std::vector<std::vector<int>> heads_array;
-        std::vector<std::vector<int>> obstacles_array;
-        std::vector<std::vector<bool>> food_array;
+        struct AStarFrontierNode {
+            std::vector<Coord> path;
+            int food_count;
+            int man_dist;
+
+            bool operator>(const AStarFrontierNode& other) const {
+                return (man_dist + path.size()) > (other.man_dist + other.path.size());
+            }
+        };
+
+        int m_height;
+        int m_width;
+        std::vector<Snake> m_snakes;
+        std::vector<std::vector<int>> m_heads_array;
+        std::vector<std::vector<int>> m_obstacles_array;
+        std::vector<std::vector<bool>> m_food_array;
 
     private:
-        std::vector<Coord> food;
-        std::vector<Coord> hazards;
+        std::vector<Coord> m_food;
+        std::vector<Coord> m_hazards;
     };
 
     class RulesetSettings {

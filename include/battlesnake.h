@@ -43,12 +43,12 @@ namespace battlesnake {
 
         std::string m_id;
         std::vector<Coord> m_body;
+        int m_length;
+        Coord m_head;
 
     private:
         std::string m_name;
         int m_health;
-        Coord m_head;
-        int m_length;
         int m_latency;
         std::string m_shout;
         Customizations m_customizations;
@@ -63,10 +63,14 @@ namespace battlesnake {
         std::vector<std::vector<int>> getHeadsArray() const;
         std::unordered_map<std::string, int> getSnakeLengths() const;
         std::vector<Coord> simulateOptions(const Coord& pos, const int& sim_time) const;
-        int measureVolume(const Coord& start, const int& subject_length) const;
+        int measureVolume(
+            const Coord& start, const int& subject_length, bool avoid_heads, 
+            const std::vector<std::vector<int>>* head_threats = nullptr
+        ) const;
         int manDist(const Coord& start_pos, const Coord& end_pos) const;
         std::vector<Coord> aStar(const Coord& start_pos, const Coord& end_pos) const;
         int getFoodDist(const Coord& pos) const;
+        std::vector<std::vector<int>> getHeadThreat(int subject_length, const std::string subject_id) const;
 
         struct AStarFrontierNode {
             std::vector<Coord> path;
@@ -76,6 +80,11 @@ namespace battlesnake {
             bool operator>(const AStarFrontierNode& other) const {
                 return (man_dist + path.size()) > (other.man_dist + other.path.size());
             }
+        };
+
+        struct HeadThreatFNode {
+            std::vector<Coord> path;
+            int food_count;
         };
 
         int m_height;

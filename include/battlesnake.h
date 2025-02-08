@@ -32,46 +32,22 @@ namespace battlesnake {
         std::string tail;
     };
 
-    class Snake {
-    public:
-        explicit Snake(const json& snake);
-        int getLength() const;
-        std::vector<Coord> getBody() const;
-        std::string getDirectionStr(const Coord& destination) const;
-        bool getHunger(const Board& board) const;
-        std::string getMove(const Board& board) const;
-
-        std::string m_id;
-        std::vector<Coord> m_body;
-        int m_length;
-        Coord m_head;
-
-    private:
-        std::string m_name;
-        int m_health;
-        int m_latency;
-        std::string m_shout;
-        Customizations m_customizations;
-    };
-
     class Board {
     public:
-        explicit Board(const json& board);
-        std::vector<Coord> getNeighbors(const Coord& pos) const;
-        std::vector<std::vector<int>> getObstacles() const;
-        std::vector<std::vector<bool>> getFood() const;
-        std::vector<std::vector<int>> getHeadsArray() const;
-        std::unordered_map<std::string, int> getSnakeLengths() const;
-        std::vector<Coord> simulateOptions(const Coord& pos, const int& sim_time) const;
-        int measureVolume(
-            const Coord& start, const int& subject_length, bool avoid_heads, 
-            const std::vector<std::vector<int>>* head_threats = nullptr
-        ) const;
-        int manDist(const Coord& start_pos, const Coord& end_pos) const;
-        std::vector<Coord> aStar(const Coord& start_pos, const Coord& end_pos) const;
-        int getFoodDist(const Coord& pos) const;
-        std::vector<std::vector<int>> getHeadThreat(int subject_length, const std::string subject_id) const;
+        struct Snake {
+            std::string m_id;
+            Coord m_head;
+            Customizations m_customizations;
+            std::string m_name;
+            int m_health;
+            int m_length;
+            std::string m_shout;
+            int m_latency;
+            std::vector<Coord> m_body;
 
+            explicit Snake(const json& snake);
+            std::string getDirectionStr(const Coord& destination) const;
+        };
         struct AStarFrontierNode {
             std::vector<Coord> path;
             int food_count;
@@ -81,11 +57,27 @@ namespace battlesnake {
                 return (man_dist + path.size()) > (other.man_dist + other.path.size());
             }
         };
-
         struct HeadThreatFNode {
             std::vector<Coord> path;
             int food_count;
         };
+
+        explicit Board(const json& board);
+        std::vector<Coord> getNeighbors(const Coord& pos) const;
+        std::vector<std::vector<int>> getObstacles() const;
+        std::vector<std::vector<bool>> getFood() const;
+        std::vector<std::vector<int>> getHeadsArray() const;
+        bool getHunger(const Snake& subject) const;
+        std::vector<Coord> simulateOptions(const Coord& pos, const int& sim_time) const;
+        int measureVolume(
+            const Coord& start, const int& subject_length, bool avoid_heads, 
+            const std::vector<std::vector<int>>* head_threats = nullptr
+        ) const;
+        int manDist(const Coord& start_pos, const Coord& end_pos) const;
+        std::vector<Coord> aStar(const Coord& start_pos, const Coord& end_pos) const;
+        int getFoodDist(const Coord& pos) const;
+        std::vector<std::vector<int>> getHeadThreat(const Snake& subject) const;
+        std::string getMove(const std::string& snake_id) const;
 
         int m_height;
         int m_width;
@@ -140,7 +132,7 @@ namespace battlesnake {
         Game game;
         int turn;
         Board board;
-        Snake you;
+        std::string you_id;
     };
 
     class Move {

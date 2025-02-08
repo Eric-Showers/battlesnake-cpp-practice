@@ -22,3 +22,5 @@ add_executable(battlesnake_starter_cpp src/main.cpp
         include/battlesnake.h
         include/json.h
         include/httplib.h)
+
+target_link_libraries(battlesnake_starter_cpp PRIVATE pthread)
